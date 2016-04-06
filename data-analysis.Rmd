@@ -1,12 +1,22 @@
 ---
-title: Traffic Data Analysis
+title: "Bey2ollak"
 output: html_document
 ---
 
 this is where things start :)
 
+First of all I have two hypothesises
+
+The first one is to determine whether 
+
+1- The number of accidents happen at rush hour or not 
+
+Firstly I will begin with data cleaning
+
+
 ```{r}
 library("dplyr")
+library("ggplot2")
 
 bey2ollak <- read.csv('all-semi-unique.csv')
 unique(bye2ollak$ad.aid)
@@ -21,13 +31,55 @@ filteredColumns <- dplyr::filter(filteredColumns, !is.na(filteredColumns$rd.hr))
 filteredColumns$crawl_date = strptime(as.character(filteredColumns$crawl_date),"%a %b %d %H:%M:%S UTC %Y")
 filteredColumns$crawl_date = as.character(filteredColumns$crawl_date)
 filteredColumns <- dplyr::filter(filteredColumns, !duplicated(filteredColumns$rd.rp.cmid))
+filteredColumns$rd.rp.cm[filteredColumns$rd.rp.stid == 1] <- "7alawa"
 filteredColumns$rd.rp.cm[filteredColumns$rd.rp.stid == 2] <- "lazeez"
 filteredColumns$rd.rp.cm[filteredColumns$rd.rp.stid == 3] <- "mashy"
 filteredColumns$rd.rp.cm[filteredColumns$rd.rp.stid == 4] <- "za7ma"
 filteredColumns$rd.rp.cm[filteredColumns$rd.rp.stid == 5] <- "mafeesh amal"
 filteredColumns$rd.rp.cm[filteredColumns$rd.rp.stid == 6] <- "eh el nezam?"
-filteredColumns$rd.rp.cm[filteredColumns$rd.rp.stid == 7] -> "khatar"
-filteredColumns$rd.rp.cm[filteredColumns$rd.rp.stid == 8] -> "7adsa"
-filteredColumns$rd.rp.cm[filteredColumns$rd.rp.stid == 9] -> "3otl"
-
+filteredColumns$rd.rp.cm[filteredColumns$rd.rp.stid == 7] <- "khatar"
+filteredColumns$rd.rp.cm[filteredColumns$rd.rp.stid == 8] <- "7adsa"
+filteredColumns$rd.rp.cm[filteredColumns$rd.rp.stid == 9] <- "3otl"
+filteredColumns$rd.rp.cm[filteredColumns$rd.rp.stid == 10] <- "other"
  
+ 
+filteredColumns$rd.rp.cm[is.na(filteredColumns$rd.rp.stid == 1 )] = "7alawa" 
+filteredColumns$rd.rp.cm[is.na(filteredColumns$rd.rp.stid == 2 )] = "lazeez"
+filteredColumns$rd.rp.cm[is.na(filteredColumns$rd.rp.stid == 3 )] = "mashy" 
+filteredColumns$rd.rp.cm[is.na(filteredColumns$rd.rp.stid == 4 )] = "za7ma"
+filteredColumns$rd.rp.cm[is.na(filteredColumns$rd.rp.stid == 5 )] = "mafeesh amal"
+filteredColumns$rd.rp.cm[is.na(filteredColumns$rd.rp.stid == 6 )] = "eh el nezam?"
+filteredColumns$rd.rp.cm[is.na(filteredColumns$rd.rp.stid == 7 )] = "khatar"
+filteredColumns$rd.rp.cm[is.na(filteredColumns$rd.rp.stid == 8 )] = "7adsa"
+filteredColumns$rd.rp.cm[is.na(filteredColumns$rd.rp.stid == 9 )] = "3otl"
+filteredColumns$rd.rp.cm[is.na(filteredColumns$rd.rp.stid == 10 )] = "other"
+
+```
+
+
+
+Plot road over all status
+
+First of All let's get the Actual Report Time from commenters and Actual read time when crawling 
+
+```{r }
+filteredColumns<- dplyr::mutate(filteredColumns, actual.rp.time = as.POSIXlt.character(filteredColumns$crawl_date) - 60*60*(filteredColumns$rd.rp.hr) - 60*(filteredColumns$rd.rp.mn) )
+
+filteredColumns<- dplyr::mutate(filteredColumns, actual.rd.time = as.POSIXlt.character(filteredColumns$crawl_date) - 60*60*(filteredColumns$rd.hr) - 60*(filteredColumns$rd.mn) )
+ 
+```
+
+Now let's detect first when do rush hours happen
+
+Assuming that we have 3 reported states for rush hours
+1- "za7ma"" 
+2- "mafeesh amal"
+
+to separate time from Date
+
+```{r}
+filteredColumns<- dplyr::mutate(filteredColumns, rp.hours =(strftime(filteredColumns$actual.rp.time, format="%H:%M" )))
+hist(as.numeric(as.character(filteredColumns$rp.hourss[filteredColumns$rd.rp.stid == 4]), filteredColumns$rd.rp.cm[filteredColumns$rd.rp.stid == 4]), main="Frequency of za7ma reports",     xlab="Hours",     border="blue",     col="yellow")
+
+```
+
