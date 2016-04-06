@@ -19,7 +19,7 @@ library("dplyr")
 library("ggplot2")
 
 bey2ollak <- read.csv('all-semi-unique.csv')
-unique(bye2ollak$ad.aid)
+
 filteredColumns <- select(bey2ollak, - c(ad.aid, ad.bgcl, ad.bgcls, ad.fncl, ad.fncls, ad.lid ,ad.logo, ad.logo2x, ad.logoAndroidS , ad.logoAndroidH, ad.cm, ad.url, ad.g, rd.img, rd.cl, rd.rp.rpImg, rd.rp.img, rd.rp.type) )
 
 filteredColumns <- dplyr::distinct(filteredColumns) 
@@ -79,7 +79,29 @@ to separate time from Date
 
 ```{r}
 filteredColumns<- dplyr::mutate(filteredColumns, rp.hours =(strftime(filteredColumns$actual.rp.time, format="%H:%M" )))
+filteredColumns<- dplyr::mutate(filteredColumns, rp.hourss =(strftime(filteredColumns$actual.rp.time, format="%H" )))
+
 hist(as.numeric(as.character(filteredColumns$rp.hourss[filteredColumns$rd.rp.stid == 4]), filteredColumns$rd.rp.cm[filteredColumns$rd.rp.stid == 4]), main="Frequency of za7ma reports",     xlab="Hours",     border="blue",     col="yellow")
+
+hist(as.numeric(as.character(filteredColumns$rp.hourss[filteredColumns$rd.rp.stid == 5]), filteredColumns$rd.rp.cm[filteredColumns$rd.rp.stid == 5]), main="Frequency of mafeesh Fayda reports",     xlab="Hours",     border="blue",     col="Red")
+
+x <- as.data.frame(as.numeric(as.character(filteredColumns$rp.hourss[filteredColumns$rd.rp.stid == 4])))
+za7ma <- filteredColumns[filteredColumns$rd.rp.stid == 4,]
+za7ma$hour <- as.numeric(za7ma$rp.hourss)
+
+mafeesh <- filteredColumns[filteredColumns$rd.rp.stid ==5, ]
+mafeesh$hour <- as.numeric(mafeesh$rp.hourss)
+y <- as.data.frame(as.numeric(as.character(filteredColumns$rp.hourss[filteredColumns$rd.rp.stid == 5])))
+
+ggplot() + geom_bar(data = za7ma, aes(x=hour)) + geom_bar(data = mafeesh, aes(x=hour), fill = 'red', alpha = '0.3')
+```
+
+Checking on accident hours
+```{r}
+accident = filteredColumns[filteredColumns$rd.rp.stid == 8,]
+accident$hour = as.numeric(accident$rp.hourss)
+
+ ggplot() + geom_bar( data = za7ma, aes(x=hour)) + geom_bar(data = mafeesh, aes(x=hour)) + geom_bar(data = accident, aes(x = hour), fill = "blue")
 
 ```
 
