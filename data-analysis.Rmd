@@ -292,3 +292,13 @@ t.test(means.rd,means.rp)
 
 The value is t = -0.74 with 95 percent confidence and a very high p-value meaning that two means are approximately equal
 
+Another hypothesis is about the peak of interaction 
+
+```{r}
+filteredColumns <- dplyr::filter(filteredColumns, !is.na(filteredColumns$rd.rp.stid))
+ ggplot(data = filteredColumns, aes(x = rp.hourss)) + geom_bar()
+ 
+ggplot() + geom_histogram(data = za7ma,aes(x=hour, y=..density..), colour="gray", fill="white", binwidth = 2)+ geom_histogram(data = mafeesh,aes(x=hour, y=..density..), colour="gray", fill="white", binwidth = 2)  + geom_density(data = filteredColumns, aes(x=as.numeric(rp.hourss)), alpha=.2, fill="magenta") 
+```
+ 
+ 
