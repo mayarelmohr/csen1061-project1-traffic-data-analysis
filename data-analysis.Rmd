@@ -2,48 +2,97 @@
 title: "Bey2ollak"
 output: html_document
 ---
+Starting with exploring the data I had a question on mind, which was:
 
-this is where things start :)
+1- Do accidents tend to happen on rush hours?
 
-First of all I have two hypothesises
+Going through the steps, other questions revealed such as:
 
-The first one is to determine whether 
+2- Is there a difference between the status of the road described by reporters and the status of the road described by bey2ollak?
 
-1- The number of accidents happen at rush hour or not 
+3- Is there is any relationship between the peak of interaction and rush hours?
 
-Firstly I will begin with data cleaning
+4- Is there a difference between weekends and weekdays for all reports?
+
+5- Is there a difference between weekends and weekdays on rush hours?
+
+
+
+Firstly I will begin with some basic data cleaning
 
 
 ```{r}
 library("dplyr")
 library("ggplot2")
+library("gridExtra")
 
+bey2ollak = read.csv('all-semi-unique.csv', encoding="UTF-8")
+```
 
-bey2ollak <- read.csv('all-semi-unique.csv')
+I removed data columns of insignificant values such as logos, background color,images, ads and values that are constant through the whole dataset
 
-filteredColumns <- select(bey2ollak, - c(ad.aid, ad.bgcl, ad.bgcls, ad.fncl, ad.fncls, ad.lid ,ad.logo, ad.logo2x, ad.logoAndroidS , ad.logoAndroidH, ad.cm, ad.url, ad.g, rd.img, rd.cl, rd.rp.rpImg, rd.rp.img, rd.rp.type) )
+I also removed NAs from important columns such as rd.stid which indicates the road status id and the hours.
 
-filteredColumns <- dplyr::distinct(filteredColumns) 
+```{r}
+filteredColumns = select(bey2ollak, - c(ad.aid, ad.bgcl, ad.bgcls, ad.fncl, ad.fncls, ad.lid ,ad.logo, ad.logo2x, ad.logoAndroidS , ad.logoAndroidH, ad.cm, ad.url, ad.g, rd.img, rd.cl, rd.rp.rpImg, rd.rp.img, rd.rp.type) )
 
-filteredColumns <- dplyr::filter(filteredColumns, !is.na(filteredColumns$rd.stid))
+filteredColumns = distinct(filteredColumns) 
 
-filteredColumns <- dplyr::filter(filteredColumns, !is.na(filteredColumns$rd.hr))
+filteredColumns = filter(filteredColumns, !is.na(filteredColumns$rd.stid))
 
+filteredColumns = filter(filteredColumns, !is.na(filteredColumns$rd.hr))
+
+```
+
+For the Date, I changed the date into a format that is clearer
+
+```{r}
 filteredColumns$crawl_date = strptime(as.character(filteredColumns$crawl_date),"%a %b %d %H:%M:%S UTC %Y")
 filteredColumns$crawl_date = as.character(filteredColumns$crawl_date)
-filteredColumns <- dplyr::filter(filteredColumns, !duplicated(filteredColumns$rd.rp.cmid))
-filteredColumns$rd.rp.cm[filteredColumns$rd.rp.stid == 1] <- "7alawa"
-filteredColumns$rd.rp.cm[filteredColumns$rd.rp.stid == 2] <- "lazeez"
-filteredColumns$rd.rp.cm[filteredColumns$rd.rp.stid == 3] <- "mashy"
-filteredColumns$rd.rp.cm[filteredColumns$rd.rp.stid == 4] <- "za7ma"
-filteredColumns$rd.rp.cm[filteredColumns$rd.rp.stid == 5] <- "mafeesh amal"
-filteredColumns$rd.rp.cm[filteredColumns$rd.rp.stid == 6] <- "eh el nezam?"
-filteredColumns$rd.rp.cm[filteredColumns$rd.rp.stid == 7] <- "khatar"
-filteredColumns$rd.rp.cm[filteredColumns$rd.rp.stid == 8] <- "7adsa"
-filteredColumns$rd.rp.cm[filteredColumns$rd.rp.stid == 9] <- "3otl"
-filteredColumns$rd.rp.cm[filteredColumns$rd.rp.stid == 10] <- "other"
- 
- 
+
+```
+
+Let's start by my first question:
+
+1- Do accidents tend to happen on rush hours?
+
+I'll start my analysis on the comments reported by users 
+
+First of all, I'll remove the duplicates from comments
+
+```{r}
+filteredColumns = filter(filteredColumns, !duplicated(filteredColumns$rd.rp.cmid))
+```
+
+Upon looking into data and the webpage for bey2ollak, the statuses for reports can be grouped into 10 categories
+
+1- "7alawa" indicates that there is no traffic
+2- "lazeez" lower level than the first one but still indicates that the road is going fine
+3-"mashy" means that there is some kind of traffic but doesn't cause the car to stop, this status is also exchanged by reports about km/hr.
+4- "za7ma" it indicates that there is heavy traffic
+5- "mafeesh amal" indicating that cars don't move, very heavy traffic
+6- "eh el nezam?" user are asking for updates
+7- "Khatar" there is something dangerous about the road
+8- "7adsa" an accident has happened that is causing the cars flow to stop
+9- "3otl" indicating that there is a problem with the road
+10- "other" indicates other causes.
+
+```{r}
+filteredColumns$rd.rp.cm[filteredColumns$rd.rp.stid == 1] = "7alawa"
+filteredColumns$rd.rp.cm[filteredColumns$rd.rp.stid == 2] = "lazeez"
+filteredColumns$rd.rp.cm[filteredColumns$rd.rp.stid == 3] = "mashy"
+filteredColumns$rd.rp.cm[filteredColumns$rd.rp.stid == 4] = "za7ma"
+filteredColumns$rd.rp.cm[filteredColumns$rd.rp.stid == 5] = "mafeesh amal"
+filteredColumns$rd.rp.cm[filteredColumns$rd.rp.stid == 6] = "eh el nezam?"
+filteredColumns$rd.rp.cm[filteredColumns$rd.rp.stid == 7] = "khatar"
+filteredColumns$rd.rp.cm[filteredColumns$rd.rp.stid == 8] = "7adsa"
+filteredColumns$rd.rp.cm[filteredColumns$rd.rp.stid == 9] = "3otl"
+filteredColumns$rd.rp.cm[filteredColumns$rd.rp.stid == 10] = "other"
+```
+
+Assigning corresponding comments to NAs
+
+```{r}
 filteredColumns$rd.rp.cm[is.na(filteredColumns$rd.rp.stid == 1 )] = "7alawa" 
 filteredColumns$rd.rp.cm[is.na(filteredColumns$rd.rp.stid == 2 )] = "lazeez"
 filteredColumns$rd.rp.cm[is.na(filteredColumns$rd.rp.stid == 3 )] = "mashy" 
@@ -59,9 +108,7 @@ filteredColumns$rd.rp.cm[is.na(filteredColumns$rd.rp.stid == 10 )] = "other"
 
 
 
-Plot road over all status
-
-First of All let's get the Actual Report Time from commenters and Actual read time when crawling 
+Now, let's get the Actual Report Time from commenters and Actual read time from radar
 
 ```{r }
 filteredColumns<- dplyr::mutate(filteredColumns, actual.rp.time = as.POSIXlt.character(filteredColumns$crawl_date) - 60*60*(filteredColumns$rd.rp.hr) - 60*(filteredColumns$rd.rp.mn) )
@@ -70,73 +117,97 @@ filteredColumns<- dplyr::mutate(filteredColumns, actual.rd.time = as.POSIXlt.cha
  
 ```
 
-Now let's detect first when do rush hours happen
 
-Assuming that we have 3 reported states for rush hours
+Secondly, let's detect first when do rush hours happen
+
+Assuming that we have 2 reported states for rush hours
 1- "za7ma"" 
 2- "mafeesh amal"
+indicating that there is heavy traffic
 
-to separate time from Date
+
+Here I'm extracting the actual time in hours to start analysis
 
 ```{r}
-filteredColumns<- dplyr::mutate(filteredColumns, rp.hours =(strftime(filteredColumns$actual.rp.time, format="%H:%M" )))
-filteredColumns<- dplyr::mutate(filteredColumns, rp.hourss =(strftime(filteredColumns$actual.rp.time, format="%H" )))
-filteredColumns<- dplyr::mutate(filteredColumns, rd.hours =(strftime(filteredColumns$actual.rd.time, format="%H" )))
+filteredColumns = mutate(filteredColumns, rp.hours =(strftime(filteredColumns$actual.rp.time, format="%H" )))
+filteredColumns = mutate(filteredColumns, rd.hours =(strftime(filteredColumns$actual.rd.time, format="%H" )))
+```
 
-hist(as.numeric(as.character(filteredColumns$rp.hourss[filteredColumns$rd.rp.stid == 4]), filteredColumns$rd.rp.cm[filteredColumns$rd.rp.stid == 4]), main="Frequency of za7ma reports",     xlab="Hours",     border="blue",     col="yellow")
+Let's see what are the rush hours
 
-hist(as.numeric(as.character(filteredColumns$rp.hourss[filteredColumns$rd.rp.stid == 5]), filteredColumns$rd.rp.cm[filteredColumns$rd.rp.stid == 5]), main="Frequency of mafeesh Fayda reports",     xlab="Hours",     border="blue",     col="Red")
-
+```{r}
 
 za7ma = filter(filteredColumns, filteredColumns$rd.rp.stid == 4)
-za7ma$hour <- as.numeric(za7ma$rp.hourss)
+za7ma$hour <- as.numeric(za7ma$rp.hours)
 
 mafeesh = filter(filteredColumns, filteredColumns$rd.rp.stid == 5)
-mafeesh$hour <- as.numeric(mafeesh$rp.hourss)
-
-
-ggplot() + geom_bar(data = za7ma, aes(x=hour)) + geom_bar(data = mafeesh, aes(x=hour), fill = 'red', alpha = '0.3')
+mafeesh$hour <- as.numeric(mafeesh$rp.hours)
 ```
 
-Checking on accident hours
+From the graph below, we can see that the frequency of both "mafeesh fayda" and "za7ma"
+The frequency from each from 14 to 18 which are 4 pm to 8 pm
+and at the morning, 8 and 9 pm
+Which makes sense such that these are times at which employees and students go back and from their jobs
 
 ```{r}
-accident = filter(filteredColumns, filteredColumns$rd.rp.stid == 8)
-accident$hour = as.numeric(accident$rp.hourss)
-
-ggplot() + geom_bar( data = za7ma, aes(x=hour)) + geom_bar(data = mafeesh, aes(x=hour)) + geom_bar(data = accident, aes(x = hour), fill = "blue")
+ggplot() + geom_bar(data = za7ma, aes(x=hour)) + geom_bar(data = mafeesh, aes(x=hour), fill = 'magenta', alpha = '0.3') +ggtitle("Mafeesh Fayda and za7ma reports")+ xlab("Hours") + ylab("Frequency")
 
 ```
+
+Let's check when do accidents happen..
+There is a great variation between the scale such that the samples size of accidents is very small compared to the rush hours
+
+```{r}
+
+accident = filter(filteredColumns, filteredColumns$rd.rp.stid == 8)
+accident$hour = as.numeric(accident$rp.hours)
+
+rushHoursRows = union (filter(filteredColumns, (filteredColumns$rd.rp.stid ==4)), filter(filteredColumns, (filteredColumns$rd.rp.stid ==5)))
+
+
+p1 = ggplot() + geom_bar( data = rushHoursRows, aes(x=as.numeric(rp.hours))) + ggtitle("Rush hours")+ xlab("Hours") + ylab("Frequency")
+
+
+p2= ggplot() + geom_bar(data = accident, aes(x = hour)) + ggtitle("Accidents ")+ xlab("Hours") + ylab("Frequency")
+
+
+
+ggplot() + geom_bar( data = rushHoursRows, aes(x=as.numeric(rp.hours))) + geom_bar(data = accident, aes(x = hour), fill = "magenta", alpha ='0.3' ) + ggtitle("Accidents in rush hours")+ xlab("Hours") + ylab("Frequency")
+
+```
+
 
 Computing the mean value for times at which accidents occur
 
 ```{r}
-m = mean(accident$hour)
-md = median(accident$hour)
-s = sd(accident$hour)
+mean(accident$hour)
+median(accident$hour)
+sd(accident$hour)
 
 ```
 Computing the mean Value for rush hours 
-ieL calculating the mean of number of hours that are reported as "za7ma" or "mafeesh Amal"
+
 ```{r}
-m1 = mean(za7ma$hour)
-md1 = median(za7ma$hour)
-s1 = sd(za7ma$hour)
-m2 = mean(mafeesh$hour)
-md2 = median(mafeesh$hour)
-s2 = sd(mafeesh$hour)
+mean(za7ma$hour)
+median(za7ma$hour)
+sd(za7ma$hour)
+mean(mafeesh$hour)
+median(mafeesh$hour)
+sd(mafeesh$hour)
 ```
 
-For our question, we are testing if the accidents tend to occur at rush hours or not 
 
 The three plots here show a relatively close median 
 
 ```{r}
-boxplot(mafeesh$hour, za7ma$hour, accident$hour, names=c("Mafeesh Amal", "Za7ma", "7adsa"), col="Blue")
-
+boxplot(mafeesh$hour, za7ma$hour, accident$hour, names=c("Mafeesh Amal", "Za7ma", "7adsa"), col="magenta")
+t.test(accident$hour, za7ma$hour)
 ```
 
-2- Another question is whether there is a difference between the status of the road described by reporters and the status of the road described by bey2ollak
+
+
+
+Another question is whether there is a difference between the status of the road described by reporters and the status of the road described by bey2ollak
 
 Let's try to examine each situation 
 
@@ -144,12 +215,14 @@ For status id = 1 meaning "7alawa"
 
 ```{r}
 halawa.rp = filter(filteredColumns, filteredColumns$rd.rp.stid == 1)
-halawa.rp$hour <- as.numeric(halawa.rp$rp.hourss)
+halawa.rp$hour =  as.numeric(halawa.rp$rp.hours)
 halawa.rd = filter(filteredColumns, filteredColumns$rd.stid == 1)
-halawa.rd$hour <- as.numeric(halawa.rd$rd.hours)
+halawa.rd$hour =  as.numeric(halawa.rd$rd.hours)
 
-ggplot() + geom_bar(data = halawa.rp, aes(x=hour)) + geom_bar(data = halawa.rd, aes(x=hour), fill = 'magenta', alpha = '0.4')
-boxplot(halawa.rp$hour, halawa.rd$hour, names = c("Reported time", "Read Time") ,col="Magenta")
+p11 = ggplot() + geom_bar(data = halawa.rp, aes(x=hour)) + geom_bar(data = halawa.rd, aes(x=hour), fill = 'magenta', alpha = '0.4') + ggtitle("Halawa rp Vs rd")
+
+p12 = boxplot(halawa.rp$hour, halawa.rd$hour, names = c("Reported time", "Read Time") ,col="Magenta")
+
 
 ```
 
@@ -157,11 +230,11 @@ For status id = 2  meaning "lazeez"
 
 ```{r}
 lazeez.rp = filter(filteredColumns, filteredColumns$rd.rp.stid == 2)
-lazeez.rp$hour <- as.numeric(lazeez.rp$rp.hourss)
+lazeez.rp$hour = as.numeric(lazeez.rp$rp.hours)
 lazeez.rd = filter(filteredColumns, filteredColumns$rd.stid == 2)
-lazeez.rd$hour <- as.numeric(lazeez.rd$rd.hours)
+lazeez.rd$hour = as.numeric(lazeez.rd$rd.hours)
 
-ggplot() + geom_bar(data = lazeez.rp, aes(x=hour)) + geom_bar(data = lazeez.rd, aes(x=hour), fill = 'magenta', alpha = '0.4')
+p21 = ggplot() + geom_bar(data = lazeez.rp, aes(x=hour)) + geom_bar(data = lazeez.rd, aes(x=hour), fill = 'magenta', alpha = '0.4') + ggtitle("Lazeez rp Vs rd")
 
 boxplot(lazeez.rp$hour, lazeez.rd$hour, names = c("Reported time", "Read Time") ,col="Magenta")
 ```
@@ -170,11 +243,11 @@ For status id = 3  meaning "mashy"
 
 ```{r}
 mashy.rp = filter(filteredColumns, filteredColumns$rd.rp.stid == 3)
-mashy.rp$hour <- as.numeric(mashy.rp$rp.hourss)
+mashy.rp$hour = as.numeric(mashy.rp$rp.hours)
 mashy.rd = filter(filteredColumns, filteredColumns$rd.stid == 3)
-mashy.rd$hour <- as.numeric(mashy.rd$rd.hours)
+mashy.rd$hour = as.numeric(mashy.rd$rd.hours)
 
-ggplot() + geom_bar(data = mashy.rp, aes(x=hour)) + geom_bar(data = mashy.rd, aes(x=hour), fill = 'magenta', alpha = '0.4')
+p31 = ggplot() + geom_bar(data = mashy.rp, aes(x=hour)) + geom_bar(data = mashy.rd, aes(x=hour), fill = 'magenta', alpha = '0.4') + ggtitle("Lazeez rp Vs rd")
 
 boxplot(mashy.rp$hour, mashy.rd$hour, names = c("Reported time", "Read Time") ,col="Magenta")
 ```
@@ -183,11 +256,11 @@ For status id = 4  meaning "za7ma"
 
 ```{r}
 za7ma.rp = filter(filteredColumns, filteredColumns$rd.rp.stid == 4)
-za7ma.rp$hour <- as.numeric(za7ma.rp$rp.hourss)
+za7ma.rp$hour = as.numeric(za7ma.rp$rp.hours)
 za7ma.rd = filter(filteredColumns, filteredColumns$rd.stid == 4)
-za7ma.rd$hour <- as.numeric(za7ma.rd$rd.hours)
+za7ma.rd$hour = as.numeric(za7ma.rd$rd.hours)
 
-ggplot() + geom_bar(data = za7ma.rp, aes(x=hour)) + geom_bar(data = za7ma.rd, aes(x=hour), fill = 'magenta', alpha = '0.4')
+p41 = ggplot() + geom_bar(data = za7ma.rp, aes(x=hour)) + geom_bar(data = za7ma.rd, aes(x=hour), fill = 'magenta', alpha = '0.4') + ggtitle("za7ma rp Vs rd")
 
 boxplot(za7ma.rp$hour, za7ma.rd$hour, names = c("Reported time", "Read Time") ,col="Magenta")
 ```
@@ -196,11 +269,11 @@ For status id = 5  meaning "mafeesh amal"
 
 ```{r}
 mafeesh.amal.rp = filter(filteredColumns, filteredColumns$rd.rp.stid == 5)
-mafeesh.amal.rp$hour <- as.numeric(mafeesh.amal.rp$rp.hourss)
+mafeesh.amal.rp$hour = as.numeric(mafeesh.amal.rp$rp.hours)
 mafeesh.amal.rd = filter(filteredColumns, filteredColumns$rd.stid == 5)
-mafeesh.amal.rd$hour <- as.numeric(mafeesh.amal.rd$rd.hours)
+mafeesh.amal.rd$hour = as.numeric(mafeesh.amal.rd$rd.hours)
 
-ggplot() + geom_bar(data = mafeesh.amal.rp, aes(x=hour)) + geom_bar(data = mafeesh.amal.rd, aes(x=hour), fill = 'magenta', alpha = '0.4')
+p51 = ggplot() + geom_bar(data = mafeesh.amal.rp, aes(x=hour)) + geom_bar(data = mafeesh.amal.rd, aes(x=hour), fill = 'magenta', alpha = '0.4') + ggtitle("Lazeez rp Vs rd")
 
 boxplot(mafeesh.amal.rp$hour, mafeesh.amal.rd$hour, names = c("Reported time", "Read Time") ,col="Magenta")
 ```
@@ -209,11 +282,11 @@ For status id = 6  meaning "eh el nezam"
 
 ```{r}
 eh.nezam.rp = filter(filteredColumns, filteredColumns$rd.rp.stid == 6)
-eh.nezam.rp$hour <- as.numeric(eh.nezam.rp$rp.hourss)
+eh.nezam.rp$hour = as.numeric(eh.nezam.rp$rp.hours)
 eh.nezam.rd = filter(filteredColumns, filteredColumns$rd.stid == 6)
-eh.nezam.rd$hour <- as.numeric(eh.nezam.rd$rd.hours)
+eh.nezam.rd$hour = as.numeric(eh.nezam.rd$rd.hours)
 
-ggplot() + geom_bar(data = eh.nezam.rp, aes(x=hour)) + geom_bar(data = eh.nezam.rd, aes(x=hour), fill = 'magenta', alpha = '0.4')
+p61 = ggplot() + geom_bar(data = eh.nezam.rp, aes(x=hour)) + geom_bar(data = eh.nezam.rd, aes(x=hour), fill = 'magenta', alpha = '0.4') + ggtitle("Eh el nezam rp Vs rd")
 
 boxplot(eh.nezam.rp$hour, eh.nezam.rd$hour, names = c("Reported time", "Read Time") ,col="Magenta")
 ```
@@ -222,11 +295,11 @@ For status id = 7  meaning "khatar"
 
 ```{r}
 khatar.rp = filter(filteredColumns, filteredColumns$rd.rp.stid == 7)
-khatar.rp$hour <- as.numeric(khatar.rp$rp.hourss)
+khatar.rp$hour = as.numeric(khatar.rp$rp.hours)
 khatar.rd = filter(filteredColumns, filteredColumns$rd.stid == 7)
-khatar.rd$hour <- as.numeric(khatar.rd$rd.hours)
+khatar.rd$hour = as.numeric(khatar.rd$rd.hours)
 
-ggplot() + geom_bar(data = khatar.rp, aes(x=hour)) + geom_bar(data = khatar.rd, aes(x=hour), fill = 'magenta', alpha = '0.4')
+p71 = ggplot() + geom_bar(data = khatar.rp, aes(x=hour)) + geom_bar(data = khatar.rd, aes(x=hour), fill = 'magenta', alpha = '0.4') + ggtitle("Khatar rp Vs rd")
 
 boxplot(khatar.rp$hour, khatar.rd$hour, names = c("Reported time", "Read Time") ,col="Magenta")
 ```
@@ -235,11 +308,11 @@ For status id = 8  meaning "7adsa"
 
 ```{r}
 accident.rp = filter(filteredColumns, filteredColumns$rd.rp.stid == 8)
-accident.rp$hour <- as.numeric(accident.rp$rp.hourss)
+accident.rp$hour <- as.numeric(accident.rp$rp.hours)
 accident.rd = filter(filteredColumns, filteredColumns$rd.stid == 8)
 accident.rd$hour <- as.numeric(accident.rd$rd.hours)
 
-ggplot() + geom_bar(data = accident.rp, aes(x=hour)) + geom_bar(data = accident.rd, aes(x=hour), fill = 'magenta', alpha = '0.4')
+p81 = ggplot() + geom_bar(data = accident.rp, aes(x=hour)) + geom_bar(data = accident.rd, aes(x=hour), fill = 'magenta', alpha = '0.4') + ggtitle("Accident rp Vs rd")
 
 boxplot(accident.rp$hour, accident.rd$hour, names = c("Reported time", "Read Time") ,col="Magenta")
 ```
@@ -248,11 +321,11 @@ For status id = 9  meaning "3otl"
 
 ```{r}
 damage.rp = filter(filteredColumns, filteredColumns$rd.rp.stid == 9)
-damage.rp$hour <- as.numeric(damage.rp$rp.hourss)
+damage.rp$hour <- as.numeric(damage.rp$rp.hours)
 damage.rd = filter(filteredColumns, filteredColumns$rd.stid == 9)
 damage.rd$hour <- as.numeric(damage.rd$rd.hours)
 
-ggplot() + geom_bar(data = damage.rp, aes(x=hour)) + geom_bar(data = damage.rd, aes(x=hour), fill = 'magenta', alpha = '0.4')
+p91 = ggplot() + geom_bar(data = damage.rp, aes(x=hour)) + geom_bar(data = damage.rd, aes(x=hour), fill = 'magenta', alpha = '0.4') + ggtitle("3otl rp Vs rd")
 
 boxplot(damage.rp$hour, damage.rd$hour, names = c("Reported time", "Read Time") ,col="Magenta")
 ```
@@ -261,21 +334,38 @@ For status id = 10  meaning "other"
 
 ```{r}
 other.rp = filter(filteredColumns, filteredColumns$rd.rp.stid == 10)
-other.rp$hour <- as.numeric(other.rp$rp.hourss)
+other.rp$hour <- as.numeric(other.rp$rp.hours)
 other.rd = filter(filteredColumns, filteredColumns$rd.stid == 10)
 other.rd$hour <- as.numeric(other.rd$rd.hours)
 
-ggplot() + geom_bar(data = other.rp, aes(x=hour)) + geom_bar(data = other.rd, aes(x=hour), fill = 'magenta', alpha = '0.4')
+p101 = ggplot() + geom_bar(data = other.rp, aes(x=hour)) + geom_bar(data = other.rd, aes(x=hour), fill = 'magenta', alpha = '0.4') + ggtitle("Others rp Vs rd")
 
 boxplot(other.rp$hour, other.rd$hour, names = c("Reported time", "Read Time") ,col="Magenta")
 ```
 
-Here, you can find the difference between the two plots where 
+
+For all plots 
+```{r}
+grid.arrange(p11,p21, ncol=2)
+grid.arrange(p31,p41, ncol=2)
+grid.arrange(p51,p61, ncol=2)
+grid.arrange(p71,p81, ncol=2)
+grid.arrange(p91,p101, ncol=2)
+```
+
+
+
+Here, you can find the difference between the two reports, using central limit theory 
 
 ```{r}
-means.rp <- c(mean(halawa.rp$hour), mean(lazeez.rp$hour), mean(mashy.rp$hour), mean(za7ma.rp$hour), mean(mafeesh.amal.rp$hour), mean(eh.nezam.rp$hour), mean(khatar.rp$hour), mean(accident.rp$hour), mean(damage.rp$hour), mean(other.rp$hour) )
+means.rp  = c(mean(halawa.rp$hour), mean(lazeez.rp$hour), mean(mashy.rp$hour), mean(za7ma.rp$hour), mean(mafeesh.amal.rp$hour), mean(eh.nezam.rp$hour), mean(khatar.rp$hour), mean(accident.rp$hour), mean(damage.rp$hour), mean(other.rp$hour) )
 
-means.rd <- c(mean(halawa.rd$hour), mean(lazeez.rd$hour), mean(mashy.rd$hour), mean(za7ma.rd$hour), mean(mafeesh.amal.rd$hour), mean(eh.nezam.rd$hour), mean(khatar.rd$hour), mean(accident.rd$hour), mean(damage.rd$hour), mean(other.rd$hour) )
+means.rp
+
+means.rd =  c(mean(halawa.rd$hour), mean(lazeez.rd$hour), mean(mashy.rd$hour), mean(za7ma.rd$hour), mean(mafeesh.amal.rd$hour), mean(eh.nezam.rd$hour), mean(khatar.rd$hour), mean(accident.rd$hour), mean(damage.rd$hour), mean(other.rd$hour) )
+
+means.rd 
+
 
 plot(density((means.rp)), type= "l", col = "red")
 par(new=TRUE)
@@ -285,6 +375,7 @@ plot(density((means.rd)), type= "l", col = "blue")
 
 Applying t-test on both the mean of reported values and mean of read values
 
+
 ```{r}
 t.test(means.rd,means.rp) 
 
@@ -292,13 +383,74 @@ t.test(means.rd,means.rp)
 
 The value is t = -0.74 with 95 percent confidence and a very high p-value meaning that two means are approximately equal
 
-Another hypothesis is about the peak of interaction 
+Another Question could be is if there is any relationship between the peak of interaction and rush hours
+ie If the number of reports has something to do with rush hours
 
 ```{r}
-filteredColumns <- dplyr::filter(filteredColumns, !is.na(filteredColumns$rd.rp.stid))
- ggplot(data = filteredColumns, aes(x = rp.hourss)) + geom_bar()
- 
-ggplot() + geom_histogram(data = za7ma,aes(x=hour, y=..density..), colour="gray", fill="white", binwidth = 2)+ geom_histogram(data = mafeesh,aes(x=hour, y=..density..), colour="gray", fill="white", binwidth = 2)  + geom_density(data = filteredColumns, aes(x=as.numeric(rp.hourss)), alpha=.2, fill="magenta") 
+filteredColumns = filter(filteredColumns, !is.na(filteredColumns$rd.rp.stid))
+ggplot(data = filteredColumns, aes(x = rp.hours)) + geom_bar() + ggtitle("Reports frequency")
 ```
+
+Comparing the total number of reports with the rush hours that we have inferred before from combining reported statuses as "za7ma" and "mafeesh amal"
+
+```{r}
+
  
+ggplot() + geom_histogram(data = rushHoursRows,aes(x=as.numeric(rp.hours), y=..density..), colour = "gray", fill = "white", binwidth = 2)  + geom_density(data = filteredColumns, aes(x = as.numeric(rp.hours)), alpha = .2, fill = "magenta") + ggtitle("Total number of reports Vs rush hours")
+ 
+boxplot(as.numeric(rushHoursRows$rp.hours), as.numeric(filteredColumns$rp.hours), main = "Rush hours Vs. total number of reports",names = c("Rush Hours", "All Reports") ,col="Magenta")
+
+t.test(as.numeric(rushHoursRows$rp.hours),as.numeric(filteredColumns$rp.hours))
+
+```
+
+
+
+Another question is whether 
+
+there is a difference between weekends and weekdays for all reports
+
+```{r}
+
+filteredColumns <- mutate(filteredColumns, rd.days = (strftime(filteredColumns$crawl_date, format="%a" )))
+```
+
+Here I choose days that are Saturdays or Fridays for weekends
+
+```{r}
+weekend = union(filter(filteredColumns,(filteredColumns$rd.days ==  "Fri")), filter(filteredColumns,(filteredColumns$rd.days ==  "Sat")))
+weekdays = setdiff(filteredColumns, weekend)
+```
+
+
+The graph here presents the number of reports on Weekends Vs the reports on normal working days
+
+```{r}
+ggplot() + geom_histogram(data = weekend,aes(x=as.numeric(rp.hours), y=..density..), colour = "gray", fill = "white", binwidth = 2)  + geom_density(data = weekdays, aes(x = as.numeric(rp.hours)), alpha = .2, fill = "magenta") + ggtitle("Reports on Weekends Vs. Working days")+ xlab("Time of reports in hours") + ylab("Frequency")
+```
+
+
+Check the t-test value
+```{r}
+t.test(as.numeric(weekend$rp.hours), as.numeric(weekdays$rp.hours))
+```
+
+For rushhours, we can do the following
+
+```{r}
+za7ma.weekend = union(filter(weekend, (weekend$rd.stid ==  4)), filter(weekend, weekend$rd.stid == 5))
+za7ma.weekdays = union(filter(weekdays, (weekdays$rd.stid ==  4 )), filter(weekdays, weekdays$rd.stid == 5))
+```
+
+
+Here the result is distribution significant given that on weekends the rush hours at morning, starting from 8 am disappear 
+which happens since people don't normally go to their jobs on weekends, so the rush hours change on weekends from normal weekdays
+
+
+```{r}
+ggplot() + geom_histogram(data = za7ma.weekend,aes(x=as.numeric(rd.hours), y=..density..), colour = "gray", fill = "white", binwidth = 2)  + geom_density(data = za7ma.weekdays, aes(x = as.numeric(rd.hours)), alpha = .2, fill = "magenta") + ggtitle("Rush Hours on Weekend Vs. Normal days")
+
+t.test(as.numeric(za7ma.weekend$rd.hours), as.numeric(za7ma.weekdays$rd.hours))
+```
+
  
